@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Twilio (
-	TwilioData,
+	Credentials(..),
+	TwilioData(..),
 	twilio,
 	availableNumbers,
 	buyNumber
 	) where
 import Network.HTTP.Conduit
 import Data.Aeson
+import Data.Aeson.TH
 import Data.Aeson.Types
 import Data.Text (Text)
 import Control.Monad
@@ -21,11 +23,17 @@ data TwilioData = TwilioData {
 	twilioRequest :: Request (ResourceT IO)
 }
 
-twilio :: ByteString -> ByteString -> IO TwilioData
-twilio account token = do
+data Credentials = Credentials {
+	account :: ByteString,
+	token :: ByteString
+}
+$(deriveJSON id ''Credentials)
+
+twilio :: Credentials -> IO TwilioData
+twilio creds = do
 	manager <- newManager def
-	req <- parseUrl $ "https://api.twilio.com/2010-04-01/Accounts/" ++ U8.toString account
-	return (TwilioData manager (applyBasicAuth account token req))
+	req <- parseUrl $ "https://api.twilio.com/2010-04-01/Accounts/" ++ U8.toString (acount creds)
+	return (TwilioData manager (applyBasicAuth (account creds) (token creds) req))
 
 
 twilioReq :: FromJSON a => ByteString -> [(ByteString, ByteString)] -> Bool -> TwilioData -> IO a
