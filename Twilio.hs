@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 module Twilio (
 	Credentials(..),
 	TwilioData(..),
@@ -26,13 +26,12 @@ data TwilioData = TwilioData {
 data Credentials = Credentials {
 	account :: ByteString,
 	token :: ByteString
-}
+} deriving (Show, Eq, Read)
 $(deriveJSON id ''Credentials)
 
-twilio :: Credentials -> IO TwilioData
-twilio creds = do
-	manager <- newManager def
-	req <- parseUrl $ "https://api.twilio.com/2010-04-01/Accounts/" ++ U8.toString (acount creds)
+twilio :: Manager -> Credentials -> IO TwilioData
+twilio manager creds = do
+	req <- parseUrl $ "https://api.twilio.com/2010-04-01/Accounts/" ++ U8.toString (account creds)
 	return (TwilioData manager (applyBasicAuth (account creds) (token creds) req))
 
 
