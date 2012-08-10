@@ -4,10 +4,15 @@ module Twilio (
 	TwilioData(..),
 	twilio,
 	availableNumbers,
-	buyNumber
+	buyNumber,
+        repXml,
+        xml
 	) where
 import Network.HTTP.Conduit
 import Data.Aeson
+import qualified Data.Map as Map
+import Text.Blaze
+import Text.Blaze.Renderer.Text
 import Data.Aeson.TH
 import Data.Aeson.Types
 import Data.Text (Text)
@@ -17,6 +22,10 @@ import Data.Monoid
 import Data.ByteString (ByteString)
 import Network.HTTP.Types
 import qualified Data.ByteString.UTF8 as U8
+import Yesod.Core (RepXml(..), toContent)
+import Text.Hamlet.XML
+-- import Text.XML.Xml2Html ()
+import Text.XML
 
 data TwilioData = TwilioData {
 	twilioManager :: Manager,
@@ -64,3 +73,8 @@ availableNumbers p = liftM unAvailableNumbers . twilioReq  "/AvailablePhoneNumbe
 -- | Buy numbers in the US
 buyNumber :: ByteString -> TwilioData -> IO ()
 buyNumber p = twilioReq "/IncomingPhoneNumbers" [("PhoneNumber", p)] True
+
+-- | Wrap a quasiquoted bunch of xml in a Response element
+repXml :: [Node] -> RepXml
+repXml = RepXml . toContent . renderMarkup . toMarkup .
+   flip (Document (Prologue [] Nothing [])) [] . Element "Response" Map.empty
