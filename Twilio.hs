@@ -5,8 +5,11 @@ module Twilio (
 	twilio,
 	availableNumbers,
 	buyNumber,
-        repXml,
-        xml
+    repXml,
+    xml,
+    RepXml(..),
+    emptyXml,
+    sendText
 	) where
 import Network.HTTP.Conduit
 import Data.Aeson
@@ -22,10 +25,14 @@ import Data.Monoid
 import Data.ByteString (ByteString)
 import Network.HTTP.Types
 import qualified Data.ByteString.UTF8 as U8
-import Yesod.Core (RepXml(..), toContent)
+import Yesod.Core (RepXml(..), toContent, emptyContent)
 import Text.Hamlet.XML
--- import Text.XML.Xml2Html ()
 import Text.XML
+
+data EmptyJSON = EmptyJSON
+
+instance FromJSON EmptyJSON where
+	parseJSON _ = return EmptyJSON
 
 data TwilioData = TwilioData {
 	twilioManager :: Manager,
@@ -78,3 +85,17 @@ buyNumber p = twilioReq "/IncomingPhoneNumbers" [("PhoneNumber", p)] True
 repXml :: [Node] -> RepXml
 repXml = RepXml . toContent . renderMarkup . toMarkup .
    flip (Document (Prologue [] Nothing [])) [] . Element "Response" Map.empty
+
+-- | Don't respond with anything
+emptyXml :: RepXml
+emptyXml = RepXml emptyContent
+
+-- | Send a text
+sendText :: TwilioData
+            -> ByteString -- ^ From
+            -> ByteString -- ^ To
+            -> ByteString -- ^ Body
+            -> IO ()
+sendText d f t b = do
+	EmptyJSON <- twilioReq "/SMS/Messages" [("To", t), ("From", f), ("Body", b)] True d
+	return ()
